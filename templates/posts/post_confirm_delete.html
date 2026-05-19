@@ -1,10 +1,172 @@
+<!-- templates/post_confirm_delete.html -->
 {% extends 'base.html' %}
+
+{% block title %}
+    Delete Confirmation - SharePoint Portal
+{% endblock %}
+
 {% block content %}
-<h2>🗑️ Delete Post?</h2>
-<p>Are you sure you want to delete "<strong>{{ object.title }}</strong>"?</p>
-<form method="post">
-    {% csrf_token %}
-    <button type="submit">Yes, Delete</button>
-    <a href="{% url 'post_detail' object.pk %}">Cancel</a>
-</form>
+<style>
+    /* --- SharePoint Danger Workspace Panels --- */
+    .ms-delete-card {
+        max-width: 560px; /* Clean structured width limit for focus items */
+        margin: 40px auto;
+        padding: 24px;
+        border: 1px solid var(--ms-error-text); /* Red 700 boundary line */
+        background-color: var(--ms-error-bg); /* Red 50 */
+        border-radius: var(--ms-radius-fluent);
+        box-shadow: var(--ms-shadow-card);
+        box-sizing: border-box;
+    }
+
+    .ms-delete-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid rgba(168, 0, 0, 0.1);
+        padding-bottom: 12px;
+    }
+
+    .ms-delete-title {
+        color: var(--ms-error-text); /* Enforce unified brand danger color */
+        margin: 0;
+        /* Applied .eth-text-heading style rules implicitly */
+        font-size: 18px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-delete-title {
+            font-size: 22px;
+            line-height: 1.6;
+        }
+    }
+
+    .ms-delete-body {
+        color: var(--ms-text-primary);
+        margin: 0 0 24px 0;
+        /* Applied .eth-text-body-md style rules implicitly */
+        font-size: 13px;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+    @media (min-width: 768px) {
+        .ms-delete-body {
+            font-size: 14px;
+            line-height: 1.7;
+        }
+    }
+
+    .ms-delete-target {
+        font-weight: 600;
+        color: #050505; /* Black 950 */
+        word-break: break-word;
+    }
+
+    /* --- Form Submission & Action Row Layout --- */
+    .ms-delete-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    /* Primary Destructive Filled Action Trigger */
+    .ms-btn-danger {
+        font-family: var(--ms-font-family);
+        background-color: var(--ms-error-text); /* Red 700 */
+        color: #FCFCFC; /* Gray 50 */
+        padding: 0 20px;
+        height: 32px;
+        border: 1px solid transparent;
+        border-radius: var(--ms-radius-fluent);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.1s ease, box-shadow 0.1s ease;
+        /* Applied .eth-text-body-md style rules implicitly */
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+    @media (min-width: 768px) {
+        .ms-btn-danger {
+            font-size: 14px;
+            line-height: 1.7;
+        }
+    }
+
+    .ms-btn-danger:hover {
+        background-color: #a80000; /* Deep Red State Override */
+        box-shadow: var(--ms-shadow-card);
+    }
+
+    .ms-btn-danger:active {
+        background-color: #7a0000;
+    }
+
+    /* Neutral Fallback Return Anchor Trigger */
+    .ms-btn-secondary {
+        font-family: var(--ms-font-family);
+        background-color: var(--ms-bg-surface);
+        color: var(--ms-text-primary);
+        padding: 0 16px;
+        height: 32px;
+        border: 1px solid var(--ms-border-ring); /* Gray 700 */
+        border-radius: var(--ms-radius-fluent);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        transition: background-color 0.1s ease, border-color 0.1s ease, color 0.1s ease;
+        /* Applied .eth-text-body-md style rules implicitly */
+        font-size: 13px;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+    @media (min-width: 768px) {
+        .ms-btn-secondary {
+            font-size: 14px;
+            line-height: 1.7;
+        }
+    }
+
+    .ms-btn-secondary:hover {
+        background-color: var(--ms-border-subtle); /* Gray 500 setup background */
+        border-color: var(--ms-text-secondary); /* Gray 800 */
+        color: #050505; /* Black 950 */
+    }
+
+    .ms-btn-secondary:active {
+        background-color: var(--ms-text-disabled); /* Gray 600 */
+    }
+</style>
+
+<div class="ms-delete-card">
+    <div class="ms-delete-header">
+        <h2 class="ms-delete-title">
+            <span>🗑️</span> Delete File Entry?
+        </h2>
+    </div>
+    
+    <p class="ms-delete-body">
+        Are you certain you want to permanently delete the document asset named 
+        <span class="ms-delete-target">"{{ object.title }}"</span>? This action is irreversible and will purge the item from active index records.
+    </p>
+    
+    <form method="post" novalidate>
+        {% csrf_token %}
+        
+        <div class="ms-delete-actions">
+            <button type="submit" class="ms-btn-danger">
+                Yes, Delete
+            </button>
+            <a href="{% url 'post_detail' object.pk %}" class="ms-btn-secondary">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
 {% endblock %}

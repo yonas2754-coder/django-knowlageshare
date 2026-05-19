@@ -1,32 +1,383 @@
+<!-- templates/post_detail.html -->
 {% extends 'base.html' %}
+
+{% block title %}
+    {{ post.title }} - SharePoint Portal
+{% endblock %}
+
 {% block content %}
-<h2>{{ post.title }}</h2>
-<p><strong>Author:</strong> {{ post.author.username }} | {{ post.created_at }}</p>
-<div style="margin: 15px 0;">{{ post.content|linebreaks }}</div>
+<style>
+    /* --- SharePoint Article Sheet Canvas Layout --- */
+    .ms-article-wrapper {
+        max-width: 800px; /* Standard optimized document readability width */
+        margin: 0 auto;
+    }
 
-{% if user.role == 'director' or user.role == 'staff' and post.author == user %}
-    <a href="{% url 'post_update' post.pk %}">✏️ Edit</a> |
-    <a href="{% url 'post_delete' post.pk %}">🗑️ Delete</a>
-{% endif %}
+    .ms-article-header {
+        border-bottom: 1px solid var(--ms-border-subtle);
+        padding-bottom: 20px;
+        margin-bottom: 24px;
+    }
 
-<hr>
-<h3>💬 Comments</h3>
-{% for comment in post.comments.all %}
-    <div style="background:#f9f9f9; padding:10px; margin:5px 0; border-left:3px solid #007bff;">
-        <strong>{{ comment.author.username }}:</strong> {{ comment.content }}
-    </div>
-{% empty %}
-    <p>No comments yet.</p>
-{% endfor %}
+    .ms-article-title {
+        color: var(--ms-text-primary);
+        margin: 0 0 12px 0;
+        /* Applied .eth-text-title style rules implicitly */
+        font-size: 24px;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+    @media (min-width: 768px) {
+        .ms-article-title {
+            font-size: 32px;
+            line-height: 1.6;
+        }
+    }
 
-{% if user.role == 'staff' or user.role == 'director' %}
-    <h4>Add Comment</h4>
-    <form method="post">
-        {% csrf_token %}
-        {{ comment_form.as_p }}
-        <button type="submit">Post Comment</button>
-    </form>
-{% else %}
-    <p><em>Managers cannot comment.</em></p>
-{% endif %}
+    .ms-article-meta {
+        color: var(--ms-text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        /* Applied .eth-text-body-sm style rules implicitly */
+        font-size: 11px;
+        font-weight: 400;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-article-meta {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+    }
+
+    .ms-author-name {
+        color: var(--ms-text-primary);
+        font-weight: 600;
+    }
+
+    .ms-meta-divider {
+        color: var(--ms-border-subtle);
+    }
+
+    /* Article Content Structural Typography */
+    .ms-article-body {
+        color: var(--ms-text-primary);
+        margin-bottom: 32px;
+        /* Applied .eth-text-body-lg style rules implicitly */
+        font-size: 15px;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+    @media (min-width: 768px) {
+        .ms-article-body {
+            font-size: 16px;
+            line-height: 1.8;
+        }
+    }
+
+    /* --- Command Action Context Toolbar --- */
+    .ms-command-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--ms-border-subtle);
+        margin-bottom: 32px;
+    }
+
+    .ms-btn-command {
+        font-family: var(--ms-font-family);
+        color: var(--ms-text-primary);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: var(--ms-radius-fluent);
+        border: 1px solid transparent;
+        background: transparent;
+        cursor: pointer;
+        transition: background-color 0.1s ease, color 0.1s ease;
+        /* Applied .eth-text-body-sm style rules implicitly */
+        font-size: 11px;
+        font-weight: 400;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-btn-command {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+    }
+
+    .ms-btn-command:hover {
+        background-color: var(--ms-border-subtle); /* Gray 500 setup background */
+        color: #050505; /* Black 950 */
+    }
+
+    .ms-btn-command.ms-danger:hover {
+        background-color: var(--ms-error-bg); /* Red 50 */
+        color: var(--ms-error-text); /* Red 700 */
+    }
+
+    /* --- SharePoint Discussion / Comments Streams --- */
+    .ms-section-title {
+        color: var(--ms-text-primary);
+        margin: 0 0 16px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        /* Applied .eth-text-subtitle-lg style rules implicitly */
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+    @media (min-width: 768px) {
+        .ms-section-title {
+            font-size: 18px;
+            line-height: 1.7;
+        }
+    }
+
+    .ms-comments-section {
+        margin-top: 32px;
+    }
+
+    .ms-comment-card {
+        background-color: var(--ms-bg-canvas); /* Gray 300 inner workspace layout frame */
+        border: 1px solid var(--ms-border-subtle);
+        border-left: 4px solid var(--ms-color-secondary); /* DeepBlue 500 primary interaction line */
+        border-radius: var(--ms-radius-fluent);
+        padding: 12px 16px;
+        margin-bottom: 12px;
+    }
+
+    .ms-comment-author {
+        color: var(--ms-text-primary);
+        margin-bottom: 4px;
+        /* Applied .eth-text-body-md style rules implicitly */
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+    @media (min-width: 768px) {
+        .ms-comment-author {
+            font-size: 14px;
+            line-height: 1.7;
+        }
+    }
+
+    .ms-comment-content {
+        color: var(--ms-text-primary);
+        margin: 0;
+        /* Applied .eth-text-body-md style rules implicitly */
+        font-size: 13px;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+    @media (min-width: 768px) {
+        .ms-comment-content {
+            font-size: 14px;
+            line-height: 1.7;
+        }
+    }
+
+    .ms-empty-comments {
+        color: var(--ms-text-secondary);
+        font-style: italic;
+        padding: 16px 0;
+        /* Applied .eth-text-body-md style rules implicitly */
+        font-size: 13px;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+    @media (min-width: 768px) {
+        .ms-empty-comments {
+            font-size: 14px;
+            line-height: 1.7;
+        }
+    }
+
+    /* --- Inline Input Forms Architecture --- */
+    .ms-comment-box-panel {
+        margin-top: 28px;
+        padding: 20px;
+        background-color: var(--ms-bg-surface);
+        border: 1px solid var(--ms-border-subtle);
+        border-radius: var(--ms-radius-fluent);
+    }
+
+    .ms-comment-box-panel form p {
+        margin-bottom: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    /* Hide standard labels inside compact commentary card if required, or style cleanly */
+    .ms-comment-box-panel form label {
+        color: var(--ms-text-secondary);
+        /* Applied .eth-text-body-sm style rules implicitly */
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-comment-box-panel form label {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+    }
+
+    .ms-comment-box-panel form textarea,
+    .ms-comment-box-panel form input[type="text"] {
+        font-family: var(--ms-font-family);
+        border: 1px solid var(--ms-border-ring); /* Gray 700 */
+        border-radius: var(--ms-radius-fluent);
+        background-color: var(--ms-bg-surface);
+        color: var(--ms-text-primary);
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 80px;
+        resize: vertical;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        /* Applied .eth-text-body-md style rules implicitly */
+        font-size: 13px;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+    @media (min-width: 768px) {
+        .ms-comment-box-panel form textarea,
+        .ms-comment-box-panel form input[type="text"] {
+            font-size: 14px;
+            line-height: 1.7;
+        }
+    }
+
+    .ms-comment-box-panel form textarea:focus,
+    .ms-comment-box-panel form input[type="text"]:focus {
+        outline: none;
+        border-color: var(--ms-color-secondary); /* DeepBlue 500 Ring Indicator */
+        box-shadow: 0 0 0 1px var(--ms-color-secondary);
+    }
+
+    .ms-btn-primary {
+        font-family: var(--ms-font-family);
+        background-color: var(--ms-color-brand); /* Lime 500 */
+        color: #FCFCFC; /* Gray 50 */
+        padding: 0 16px;
+        height: 32px;
+        border: 1px solid transparent;
+        border-radius: var(--ms-radius-fluent);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.1s ease;
+        /* Applied .eth-text-body-md style rules implicitly */
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+    @media (min-width: 768px) {
+        .ms-btn-primary {
+            font-size: 14px;
+            line-height: 1.7;
+        }
+    }
+
+    .ms-btn-primary:hover {
+        background-color: var(--ms-color-brand-hover); /* Lime 600 */
+    }
+
+    .ms-status-lockout {
+        font-style: normal;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background-color: var(--ms-border-subtle); /* Gray 500 setup background */
+        padding: 8px 12px;
+        border-radius: var(--ms-radius-fluent);
+        width: max-content;
+        color: var(--ms-text-secondary);
+        /* Applied .eth-text-body-sm style rules implicitly */
+        font-size: 11px;
+        font-weight: 400;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-status-lockout {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+    }
+</style>
+
+<div class="ms-article-wrapper">
+    <!-- Document Context Display Header Layout -->
+    <header class="ms-article-header">
+        <h2 class="ms-article-title">{{ post.title }}</h2>
+        <div class="ms-article-meta">
+            <span>Author:</span>
+            <span class="ms-author-name">{{ post.author.username }}</span>
+            <span class="ms-meta-divider">|</span>
+            <span>{{ post.created_at|date:"M d, Y H:i" }}</span>
+        </div>
+    </header>
+
+    <!-- Core Publishing Context Body Area -->
+    <article class="ms-article-body">
+        {{ post.content|linebreaks }}
+    </article>
+
+    <!-- Conditional File/Post Control Operations Deck -->
+    {% if user.role == 'director' or user.role == 'staff' and post.author == user %}
+        <div class="ms-command-bar">
+            <a href="{% url 'post_update' post.pk %}" class="ms-btn-command">
+                <span>✏️</span> Edit Properties
+            </a>
+            <a href="{% url 'post_delete' post.pk %}" class="ms-btn-command ms-danger">
+                <span>🗑️</span> Delete Document
+            </a>
+        </div>
+    {% endif %}
+
+    <!-- Target Interaction/Discussion Layer -->
+    <section class="ms-comments-section">
+        <h3 class="ms-section-title">
+            <span>💬</span> Discussion & Comments
+        </h3>
+        
+        <div class="ms-comments-timeline">
+            {% for comment in post.comments.all %}
+                <div class="ms-comment-card">
+                    <div class="ms-comment-author">{{ comment.author.username }}</div>
+                    <p class="ms-comment-content">{{ comment.content }}</p>
+                </div>
+            {% empty %}
+                <p class="ms-empty-comments">No remarks have been introduced into this forum file system thread yet.</p>
+            {% endfor %}
+        </div>
+
+        <!-- Role Dependency Interaction Guardrails -->
+        {% if user.role == 'staff' or user.role == 'director' %}
+            <div class="ms-comment-box-panel">
+                <h4 class="ms-section-title" style="font-size: 14px; margin-bottom: 12px;">Add Comment</h4>
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {{ comment_form.as_p }}
+                    <button type="submit" class="ms-btn-primary">
+                        Post Comment
+                    </button>
+                </form>
+            </div>
+        {% else %}
+            <div class="ms-comment-box-panel" style="background-color: transparent; border-style: dashed;">
+                <span class="ms-status-lockout">🔒 Account permissions restrict role ({{ user.role }}) from introducing message board properties.</span>
+            </div>
+        {% endif %}
+    </section>
+</div>
 {% endblock %}

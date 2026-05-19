@@ -1,22 +1,244 @@
+<!-- templates/post_list.html -->
 {% extends 'base.html' %}
+
+{% block title %}
+    All Posts - SharePoint Portal
+{% endblock %}
+
 {% block content %}
-<h2>📄 All Posts</h2>
-{% for post in posts %}
-    <div style="border:1px solid #ccc; padding:15px; margin:10px 0; border-radius:5px;">
-        <h3><a href="{% url 'post_detail' post.pk %}">{{ post.title }}</a></h3>
-        <p>By: <strong>{{ post.author.username }}</strong> | {{ post.created_at|date:"M d, Y H:i" }}</p>
-        
-        {% if user.role == 'director' %}
-            <a href="{% url 'post_update' post.pk %}">✏️ Edit</a> |
-            <a href="{% url 'post_delete' post.pk %}">🗑️ Delete</a>
-        {% elif user.role == 'staff' and post.author == user %}
-            <a href="{% url 'post_update' post.pk %}">✏️ Edit</a> |
-            <a href="{% url 'post_delete' post.pk %}">🗑️ Delete</a>
-        {% elif user.role == 'manager' %}
-            <em>(Read Only)</em>
-        {% endif %}
-    </div>
-{% empty %}
-    <p>No posts yet.</p>
-{% endfor %}
+<style>
+    /* --- SharePoint Document Grid Layout --- */
+    .ms-page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--ms-border-subtle);
+        margin-bottom: 24px;
+    }
+
+    .ms-page-title {
+        color: var(--ms-text-primary);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        /* Applied .eth-text-heading style rules implicitly */
+        font-size: 18px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-page-title {
+            font-size: 22px;
+            line-height: 1.6;
+        }
+    }
+
+    .ms-list-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    /* SharePoint Standard List Row / Item Card */
+    .ms-list-item {
+        border: 1px solid var(--ms-border-subtle);
+        background-color: var(--ms-bg-surface);
+        border-radius: var(--ms-radius-fluent);
+        padding: 16px 20px;
+        transition: box-shadow 0.15s ease, border-color 0.15s ease;
+        position: relative;
+    }
+
+    .ms-list-item:hover {
+        border-color: var(--ms-border-ring); /* Gray 700 */
+        box-shadow: var(--ms-shadow-card);
+    }
+
+    /* Document Title Anchor Configurations */
+    .ms-item-title {
+        margin: 0 0 6px 0;
+        /* Applied .eth-text-subtitle-md style rules implicitly */
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-item-title {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+    }
+
+    .ms-item-title a {
+        color: var(--ms-color-secondary); /* DeepBlue 500 / DEFAULT secondary action color */
+        text-decoration: none;
+    }
+
+    .ms-item-title a:hover {
+        color: var(--ms-color-secondary-hover); /* DeepBlue 600 */
+        text-decoration: underline;
+    }
+
+    /* Professional Metadata Row Setup */
+    .ms-item-metadata {
+        margin: 0 0 16px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        color: var(--ms-text-secondary);
+        /* Applied .eth-text-body-sm style rules implicitly */
+        font-size: 11px;
+        font-weight: 400;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-item-metadata {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+    }
+
+    .ms-metadata-divider {
+        color: var(--ms-border-subtle);
+    }
+
+    .ms-author-badge {
+        color: var(--ms-text-primary);
+        font-weight: 600;
+    }
+
+    /* Command Action Interface Buttons Group */
+    .ms-item-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-top: 12px;
+        border-top: 1px solid var(--ms-border-subtle);
+    }
+
+    /* Standard Command Bar Button style */
+    .ms-btn-command {
+        font-family: var(--ms-font-family);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 8px;
+        border-radius: var(--ms-radius-fluent);
+        border: 1px solid transparent;
+        background: transparent;
+        cursor: pointer;
+        transition: background-color 0.1s ease, color 0.1s ease;
+        color: var(--ms-text-primary);
+        /* Applied .eth-text-body-sm style rules implicitly */
+        font-size: 11px;
+        font-weight: 400;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-btn-command {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+    }
+
+    .ms-btn-command:hover {
+        background-color: var(--ms-border-subtle); /* Gray 500 setup background */
+        color: #050505; /* Black 950 */
+    }
+
+    .ms-btn-command.ms-danger:hover {
+        background-color: var(--ms-error-bg); /* Red 50 */
+        color: var(--ms-error-text); /* Red 700 */
+    }
+
+    .ms-status-tag {
+        font-style: normal;
+        padding: 4px 8px;
+        cursor: default;
+        color: var(--ms-text-disabled);
+        /* Applied .eth-text-body-sm style rules implicitly */
+        font-size: 11px;
+        font-weight: 400;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-status-tag {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+    }
+
+    /* Empty state canvas dashboard display */
+    .ms-empty-state {
+        text-align: center;
+        padding: 48px 16px;
+        border: 1px dashed var(--ms-border-subtle);
+        background-color: var(--ms-bg-canvas); /* Gray 300 setup */
+        color: var(--ms-text-secondary);
+        /* Applied .eth-text-body-md style rules implicitly */
+        font-size: 13px;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+    @media (min-width: 768px) {
+        .ms-empty-state {
+            font-size: 14px;
+            line-height: 1.7;
+        }
+    }
+</style>
+
+<div class="ms-page-header">
+    <h2 class="ms-page-title">
+        <span>📄</span> All Posts
+    </h2>
+</div>
+
+<div class="ms-list-container">
+    {% for post in posts %}
+        <div class="ms-list-item">
+            <h3 class="ms-item-title">
+                <a href="{% url 'post_detail' post.pk %}">{{ post.title }}</a>
+            </h3>
+            
+            <div class="ms-item-metadata">
+                <span>By:</span>
+                <span class="ms-author-badge">{{ post.author.username }}</span>
+                <span class="ms-metadata-divider">|</span>
+                <span>{{ post.created_at|date:"M d, Y H:i" }}</span>
+            </div>
+            
+            <!-- Conditional Command/Action Drawer Grid Row Layer -->
+            {% if user.role == 'director' or user.role == 'staff' and post.author == user or user.role == 'manager' %}
+                <div class="ms-item-actions">
+                    {% if user.role == 'director' %}
+                        <a href="{% url 'post_update' post.pk %}" class="ms-btn-command">
+                            <span>✏️</span> Edit
+                        </a>
+                        <a href="{% url 'post_delete' post.pk %}" class="ms-btn-command ms-danger">
+                            <span>🗑️</span> Delete
+                        </a>
+                    {% elif user.role == 'staff' and post.author == user %}
+                        <a href="{% url 'post_update' post.pk %}" class="ms-btn-command">
+                            <span>✏️</span> Edit
+                        </a>
+                        <a href="{% url 'post_delete' post.pk %}" class="ms-btn-command ms-danger">
+                            <span>🗑️</span> Delete
+                        </a>
+                    {% elif user.role == 'manager' %}
+                        <span class="ms-status-tag">🔒 Read Only</span>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    {% empty %}
+        <div class="ms-empty-state">
+            <p>No active posts or documents discovered in this view panel system library.</p>
+        </div>
+    {% endfor %}
+</div>
 {% endblock %}

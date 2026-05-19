@@ -1,42 +1,479 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Role Based App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        {% block title %}SharePoint Portal{% endblock %}
+    </title>
+    <!-- Fluent UI & ETH Custom Core Stylesheets -->
     <style>
-        body { font-family: sans-serif; max-width: 800px; margin: auto; padding: 20px; }
-        nav { background: #333; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
-        nav a, nav button { color: white; text-decoration: none; margin-right: 15px; }
-        .msg { padding: 10px; margin: 10px 0; border-radius: 4px; }
-        .success { background: #d4edda; color: #155724; }
-        .error { background: #f8d7da; color: #721c24; }
-        form p { margin: 10px 0; }
-    </style>
-</head>
-<body>
-    <nav>
-        <a href="{% url 'post_list' %}">🏠 Home</a>
-        {% if user.is_authenticated %}
-            {% if user.role == 'director' or user.role == 'staff' %}
-                <a href="{% url 'post_create' %}">➕ New Post</a>
-            {% endif %}
-            <span>👤 {{ user.username }} ({{ user.role }})</span>
-            <form action="{% url 'logout' %}" method="post" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit">Logout</button>
-            </form>
-        {% else %}
-            <a href="{% url 'login' %}">🔑 Login</a>
-             <a href="{% url 'register' %}">📝 Register</a>
-        {% endif %}
-    </nav>
+        /* --- Available Design Tokens (ETH Theme Integration) --- */
+        :root {
+            /* SharePoint Canvas & Neutral Colors derived from Gray / Black Palettes */
+            --ms-bg-canvas: #F5F5F5;       /* Gray 300 */
+            --ms-bg-surface: #FCFCFC;      /* Gray 100 */
+            --ms-bg-nav: #FCFCFC;          /* Gray 50 */
+            
+            /* Typography Neutral Colors */
+            --ms-text-primary: #333333;    /* Black 500 / DEFAULT */
+            --ms-text-secondary: #5E5E5E;  /* Gray 800 */
+            --ms-text-disabled: #BFBFBF;   /* Gray 600 */
+            
+            /* ETH Corporate Branding Accents (Lime Primary & Deep Blue Secondary) */
+            --ms-color-brand: #8DC63F;     /* Lime 500 / DEFAULT */
+            --ms-color-brand-hover: #72A130;/* Lime 600 */
+            --ms-color-brand-active: #567A24;/* Lime 700 */
+            --ms-color-brand-light: #F3F9EB; /* Lime 500 */
+            
+            --ms-color-secondary: #0072BC; /* DeepBlue 500 / DEFAULT */
+            --ms-color-secondary-hover: #005C99; /* DeepBlue 600 */
+            
+            /* Enterprise Borders & Structural Depth */
+            --ms-border-subtle: #EEEEEE;   /* Gray 500 */
+            --ms-border-ring: #8F8F8F;     /* Gray 700 */
+            --ms-shadow-card: 0 1.6px 3.6px 0 rgba(48, 48, 48, 0.13), 0 0.3px 0.9px 0 rgba(48, 48, 48, 0.1);
+            --ms-shadow-layer: 0 6.4px 14.4px 0 rgba(48, 48, 48, 0.13), 0 1.2px 3.6px 0 rgba(48, 48, 48, 0.1);
+            
+            /* Layout & Sizing */
+            --ms-radius-fluent: 2px;       
+            --ms-font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            
+            /* Message Bar Feedback States mapping directly to Red, Green, and Yellow palettes */
+            --ms-success-bg: #DBFFEB;      /* Green 50 */
+            --ms-success-border: #00AB4E;  /* Green 500 */
+            --ms-success-text: #00662E;    /* Green 700 */
+            
+            --ms-error-bg: #FDE7E8;        /* Red 50 */
+            --ms-error-border: #ED1C24;    /* Red 500 */
+            --ms-error-text: #920C10;      /* Red 700 */
+            
+            --ms-warning-bg: #FFF9E5;      /* Yellow 50 */
+            --ms-warning-border: #FFC20E;  /* Yellow 500 */
+            --ms-warning-text: #382A00;    /* Yellow 900 */
+        }
 
+        /* --- Global Reset & Core Engine Setup --- */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--ms-font-family);
+            background-color: var(--ms-bg-canvas);
+            color: var(--ms-text-primary);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* --- Text Engine Options Integration --- */
+        .eth-text-hero {
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+        @media (min-width: 768px) {
+            .eth-text-hero {
+                font-size: 48px;
+                line-height: 1.5;
+            }
+        }
+
+        .eth-text-title {
+            font-size: 24px;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+        @media (min-width: 768px) {
+            .eth-text-title {
+                font-size: 32px;
+                line-height: 1.6;
+            }
+        }
+
+        .eth-text-heading {
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+        @media (min-width: 768px) {
+            .eth-text-heading {
+                font-size: 22px;
+                line-height: 1.6;
+            }
+        }
+
+        .eth-text-subtitle-lg {
+            font-size: 16px;
+            font-weight: 400;
+            line-height: 1.5;
+        }
+        @media (min-width: 768px) {
+            .eth-text-subtitle-lg {
+                font-size: 18px;
+                line-height: 1.7;
+            }
+        }
+
+        .eth-text-subtitle-md {
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+        @media (min-width: 768px) {
+            .eth-text-subtitle-md {
+                font-size: 16px;
+                line-height: 1.6;
+            }
+        }
+
+        .eth-text-body-lg {
+            font-size: 15px;
+            font-weight: 400;
+            line-height: 1.5;
+        }
+        @media (min-width: 768px) {
+            .eth-text-body-lg {
+                font-size: 16px;
+                line-height: 1.8;
+            }
+        }
+
+        .eth-text-body-md {
+            font-size: 13px;
+            font-weight: 400;
+            line-height: 1.5;
+        }
+        @media (min-width: 768px) {
+            .eth-text-body-md {
+                font-size: 14px;
+                line-height: 1.7;
+            }
+        }
+
+        .eth-text-body-sm {
+            font-size: 11px;
+            font-weight: 400;
+            line-height: 1.4;
+        }
+        @media (min-width: 768px) {
+            .eth-text-body-sm {
+                font-size: 12px;
+                line-height: 1.6;
+            }
+        }
+
+        /* --- SharePoint Top Suite Bar Navigation --- */
+        .ms-suite-bar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+          background-color: var(--ms-color-brand); /* Explicit Lime Background Setup */
+            border-bottom: 1px solid var(--ms-border-subtle);
+            box-shadow: 0 1px 2px 0 rgba(0,0,0,0.02);
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 24px;
+            height: 48px;
+            box-sizing: border-box;
+            
+        }
+
+        .nav-group {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            height: 100%;
+        }
+
+        /* Enterprise Action Item Navigation Elements */
+        nav a, 
+        nav .ms-user-info, 
+        nav button {
+            font-family: var(--ms-font-family);
+            text-decoration: none;
+            color: var(--ms-text-primary);
+            padding: 0 16px;
+            height: 48px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 400;
+            transition: background-color 0.1s ease, color 0.1s ease;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* Custom bottom-border active indicator utilizing brand accents */
+        nav a.active::after,
+        nav a:hover::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background-color: var(--ms-color-brand);
+        }
+
+        nav a.active {
+            font-weight: 600;
+            color: var(--ms-color-secondary);
+        }
+
+        nav a:hover, 
+        nav button:hover {
+            background-color: var(--ms-border-subtle);
+            color: #050505; /* Black 950 */
+        }
+
+        nav a:active, 
+        nav button:active {
+            background-color: var(--ms-text-disabled);
+        }
+
+        /* User Profile Information Layout */
+        nav .ms-user-info {
+            color: var(--ms-text-secondary);
+            cursor: default;
+            border-left: 1px solid var(--ms-border-subtle);
+            padding-left: 20px;
+            margin-left: 8px;
+        }
+        
+        nav .ms-user-info::after {
+            display: none;
+        }
+
+        /* Enterprise Action Button (Secondary Deep Blue Variant) */
+        .ms-btn-action {
+            color: var(--ms-color-secondary);
+            font-weight: 600;
+        }
+        
+        .ms-btn-action:hover {
+            color: var(--ms-color-secondary-hover);
+        }
+
+        .logout-form {
+            display: inline-flex;
+            align-items: center;
+            height: 100%;
+        }
+
+        /* --- Mobile Responsive Switch Layouts --- */
+        .menu-toggle, 
+        .menu-button {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                flex-wrap: wrap;
+                padding: 0 16px;
+                height: auto;
+                min-height: 48px;
+            }
+
+            .menu-button {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                gap: 4px;
+                width: 40px;
+                height: 48px;
+                padding: 0 10px;
+                order: 1;
+                cursor: pointer;
+            }
+            
+            .menu-button::after { display: none !important; }
+
+            .menu-button span {
+                width: 20px;
+                height: 2px;
+                background-color: var(--ms-text-primary);
+                transition: transform 0.2s ease, opacity 0.2s ease;
+            }
+
+            .nav-home {
+                order: 0;
+                height: 48px;
+            }
+
+            .nav-group-dynamic {
+                display: none;
+                flex-direction: column;
+                width: 100%;
+                height: auto;
+                align-items: stretch;
+                padding-bottom: 12px;
+                order: 2;
+                border-top: 1px solid var(--ms-border-subtle);
+            }
+
+            nav a, nav .ms-user-info, nav button {
+                height: 44px;
+                width: 100%;
+                padding: 0 8px;
+                border-left: none;
+                margin-left: 0;
+            }
+            
+            nav a.active::after, nav a:hover::after {
+                left: 0; top: 0; bottom: 0; width: 4px; height: 100%;
+            }
+
+            .logout-form {
+                width: 100%;
+                height: 44px;
+            }
+
+            .menu-toggle:checked ~ .nav-group-dynamic {
+                display: flex;
+            }
+
+            /* Hamburger Switch Transformations */
+            .menu-toggle:checked ~ .menu-button span:nth-child(1) {
+                transform: translateY(6px) rotate(45deg);
+            }
+            .menu-toggle:checked ~ .menu-button span:nth-child(2) {
+                opacity: 0;
+            }
+            .menu-toggle:checked ~ .menu-button span:nth-child(3) {
+                transform: translateY(-6px) rotate(-45deg);
+            }
+        }
+
+        /* --- SharePoint Message Bar Framework --- */
+        .ms-message-container {
+            max-width: 1400px;
+            margin: 16px auto 0 auto;
+            padding: 0 24px;
+            box-sizing: border-box;
+        }
+
+        .msg {
+            padding: 10px 16px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--ms-border-subtle);
+            border-left: 4px solid var(--ms-text-secondary);
+            background-color: var(--ms-bg-surface);
+            box-shadow: var(--ms-shadow-card);
+        }
+
+        .msg.success {
+            background-color: var(--ms-success-bg);
+            border-color: var(--ms-success-bg);
+            border-left-color: var(--ms-success-border);
+            color: var(--ms-success-text);
+        }
+
+        .msg.error {
+            background-color: var(--ms-error-bg);
+            border-color: var(--ms-error-bg);
+            border-left-color: var(--ms-error-border);
+            color: var(--ms-error-text);
+        }
+
+        .msg.warning {
+            background-color: var(--ms-warning-bg);
+            border-color: var(--ms-warning-bg);
+            border-left-color: var(--ms-warning-border);
+            color: var(--ms-warning-text);
+        }
+
+        /* --- Workspace Main Content Document Structure --- */
+        .ms-workspace {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px 24px;
+            box-sizing: border-box;
+        }
+
+        /* SharePoint Standard Document/List Card Sheet Integration */
+        .ms-panel-sheet {
+            background-color: var(--ms-bg-surface);
+            border: 1px solid var(--ms-border-subtle);
+            box-shadow: var(--ms-shadow-card);
+            border-radius: var(--ms-radius-fluent);
+            padding: 24px;
+            box-sizing: border-box;
+        }
+    </style>
+    
+  
+</head>
+<body class="eth-text-body-md">
+
+    <!-- SharePoint Suite Bar Navigation Container -->
+    <header class="ms-suite-bar">
+        <nav>
+            <input type="checkbox" id="menu-toggle" class="menu-toggle" aria-hidden="true">
+            
+            <label for="menu-toggle" class="menu-button" aria-label="Toggle Navigation Options">
+                <span></span>
+                <span></span>
+                <span></span>
+            </label>
+
+            <!-- Home Command Link Option -->
+            <a href="{% url 'description' %}" class="nav-home active eth-text-subtitle-md">
+                <span>🏠</span> Home
+            </a>
+
+            <!-- Action Context Options Wrapper -->
+            <div class="nav-group nav-group-dynamic eth-text-body-md">
+                {% if user.is_authenticated %}
+                    {% if user.role == 'director' or user.role == 'staff' %}
+                    <a href="{% url 'post_list' %}" class="nav-home active eth-text-subtitle-md">
+                <span>📋</span> All Posts
+            </a>
+                        <a href="{% url 'post_create' %}"><span>➕</span> New Post</a>
+                    {% endif %}
+                    
+                    <div class="ms-user-info">
+                        <span>👤</span> {{ user.username }} &middot; <strong>{{ user.role|title }}</strong>
+                    </div>
+                    
+                    <form action="{% url 'logout' %}" method="post" class="logout-form">
+                        {% csrf_token %}
+                        <button type="submit" class="ms-btn-action">Logout</button>
+                    </form>
+                {% else %}
+                
+                    <a href="{% url 'login' %}" class="ms-btn-action">🔑 Sign In</a>
+                    <a href="{% url 'register' %}" class="ms-btn-action">📝 Register</a>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
+    <!-- System Messages/Status Bars -->
     {% if messages %}
-        {% for message in messages %}
-            <div class="msg {{ message.tags }}">{{ message }}</div>
-        {% endfor %}
+        <div class="ms-message-container eth-text-body-sm">
+            {% for message in messages %}
+                <div class="msg {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
     {% endif %}
 
-    {% block content %}{% endblock %}
+    <!-- Central Project Document Workspace Frame -->
+    <main class="ms-workspace">
+        <div class="ms-panel-sheet">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
 </body>
 </html>

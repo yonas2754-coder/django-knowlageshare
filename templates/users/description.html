@@ -1,0 +1,39 @@
+<!-- templates/description.html -->
+{% extends 'base.html' %}
+
+{% block title %}
+    Project Description - SharePoint Portal
+{% endblock %}
+
+{% block content %}
+<style>
+    .ms-centered-desc-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40vh;
+        padding: 40px 24px;
+        box-sizing: border-box;
+    }
+
+    .ms-centered-desc-text {
+        max-width: 720px;
+        text-align: center;
+        color: var(--ms-text-primary);
+        margin: 0;
+    }
+    
+    .ms-centered-desc-text strong {
+        color: var(--ms-color-secondary);
+        display: block;
+        margin-bottom: 12px;
+    }
+</style>
+
+<div class="ms-centered-desc-wrapper">
+    <p class="ms-centered-desc-text eth-text-body-lg">
+        <strong class="eth-text-title">Knowledge Base</strong>
+        A shared knowledge base where every user can search for solutions and share experiences. This will reduce repeated effort and help other team members learn faster.
+    </p>
+</div>
+{% endblock %}

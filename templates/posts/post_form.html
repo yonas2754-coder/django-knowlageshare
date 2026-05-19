@@ -1,10 +1,263 @@
+<!-- templates/post_form.html -->
 {% extends 'base.html' %}
+
+{% block title %}
+    {% if object %}Edit Post{% else %}Create New Post{% endif %} - SharePoint Portal
+{% endblock %}
+
 {% block content %}
-<h2>{% if object %}Edit Post{% else %}Create New Post{% endif %}</h2>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Save</button>
-    <a href="{% url 'post_list' %}">Cancel</a>
-</form>
+<style>
+    /* --- SharePoint Document Canvas Form Panels --- */
+    .ms-form-card {
+        max-width: 680px; /* Standard workspace publishing width limit */
+        margin: 16px auto;
+        padding: 8px;
+        box-sizing: border-box;
+    }
+
+    .ms-form-header {
+        border-bottom: 1px solid var(--ms-border-subtle);
+        padding-bottom: 16px;
+        margin-bottom: 28px;
+    }
+
+    .ms-form-title {
+        color: var(--ms-text-primary);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        /* Applied .eth-text-heading style rules implicitly */
+        font-size: 18px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-form-title {
+            font-size: 22px;
+            line-height: 1.6;
+        }
+    }
+
+    /* Target Django's generic form paragraph fields cleanly */
+    .ms-form-card form p {
+        margin-bottom: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    /* Strict SharePoint Label Formats */
+    .ms-form-card form label {
+        color: var(--ms-text-primary);
+        /* Applied .eth-text-body-md style rules implicitly */
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+    @media (min-width: 768px) {
+        .ms-form-card form label {
+            font-size: 14px;
+            line-height: 1.7;
+        }
+    }
+
+    /* Global Input Control Configurations to match Fluent UI v9 */
+    .ms-form-card form input[type="text"],
+    .ms-form-card form input[type="password"],
+    .ms-form-card form input[type="email"],
+    .ms-form-card form select,
+    .ms-form-card form textarea {
+        font-family: var(--ms-font-family);
+        padding: 6px 12px;
+        border: 1px solid var(--ms-border-ring); /* Gray 700 */
+        border-radius: var(--ms-radius-fluent);
+        background-color: var(--ms-bg-surface);
+        color: var(--ms-text-primary);
+        box-sizing: border-box;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        width: 100%;
+        /* Applied .eth-text-subtitle-md style rules implicitly */
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-form-card form input[type="text"],
+        .ms-form-card form input[type="password"],
+        .ms-form-card form input[type="email"],
+        .ms-form-card form select,
+        .ms-form-card form textarea {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+    }
+
+    /* Enforce text area block proportion configurations */
+    .ms-form-card form textarea {
+        min-height: 160px;
+        resize: vertical;
+        /* Applied .eth-text-body-lg style rules implicitly for body textarea content */
+        font-size: 15px;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+    @media (min-width: 768px) {
+        .ms-form-card form textarea {
+            font-size: 16px;
+            line-height: 1.8;
+        }
+    }
+
+    .ms-form-card form input:focus,
+    .ms-form-card form select:focus,
+    .ms-form-card form textarea:focus {
+        outline: none;
+        border-color: var(--ms-color-secondary); /* DeepBlue 500 Focus Ring Indicator */
+        box-shadow: 0 0 0 1px var(--ms-color-secondary);
+    }
+
+    /* Muted Helper descriptions styling below inputs */
+    .ms-form-card .helptext {
+        color: var(--ms-text-secondary);
+        margin-top: 4px;
+        /* Applied .eth-text-body-sm style rules implicitly */
+        font-size: 11px;
+        font-weight: 400;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-form-card .helptext {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+    }
+
+    /* Dynamic Inline validation errors output stack */
+    .ms-form-card .errorlist {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 8px 0;
+        color: var(--ms-error-text); /* Red 700 */
+        /* Applied .eth-text-body-sm style rules implicitly */
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-form-card .errorlist {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+    }
+
+    /* --- SharePoint Command Bar / Layout Button Group --- */
+    .ms-form-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding-top: 24px;
+        border-top: 1px solid var(--ms-border-subtle);
+        margin-top: 32px;
+    }
+
+    /* Primary Filled Accent Command Interface Option */
+    .ms-btn-primary {
+        font-family: var(--ms-font-family);
+        background-color: var(--ms-color-brand); /* Lime 500 */
+        color: #FCFCFC; /* Gray 50 */
+        padding: 0 24px;
+        height: 32px;
+        border: 1px solid transparent;
+        border-radius: var(--ms-radius-fluent);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.1s ease, box-shadow 0.1s ease;
+        /* Applied .eth-text-subtitle-md style rules implicitly */
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-btn-primary {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+    }
+
+    .ms-btn-primary:hover {
+        background-color: var(--ms-color-brand-hover); /* Lime 600 */
+    }
+
+    .ms-btn-primary:active {
+        background-color: var(--ms-color-brand-active); /* Lime 700 */
+    }
+
+    /* Flat Neutral Cancel Action Anchor Line Layout */
+    .ms-btn-secondary {
+        font-family: var(--ms-font-family);
+        background-color: transparent;
+        color: var(--ms-text-primary);
+        padding: 0 16px;
+        height: 32px;
+        border: 1px solid var(--ms-border-ring); /* Gray 700 */
+        border-radius: var(--ms-radius-fluent);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        transition: background-color 0.1s ease, border-color 0.1s ease, color 0.1s ease;
+        /* Applied .eth-text-body-md style rules implicitly */
+        font-size: 13px;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+    @media (min-width: 768px) {
+        .ms-btn-secondary {
+            font-size: 14px;
+            line-height: 1.7;
+        }
+    }
+
+    .ms-btn-secondary:hover {
+        background-color: var(--ms-border-subtle); /* Gray 500 setup background */
+        border-color: var(--ms-text-secondary); /* Gray 800 */
+        color: #050505; /* Black 950 */
+    }
+
+    .ms-btn-secondary:active {
+        background-color: var(--ms-text-disabled); /* Gray 600 */
+    }
+</style>
+
+<div class="ms-form-card">
+    <div class="ms-form-header">
+        <h2 class="ms-form-title">
+            {% if object %}
+                <span>✏️</span> Edit Post Properties
+            {% else %}
+                <span>➕</span> Create New Library Post
+            {% endif %}
+        </h2>
+    </div>
+    
+    <form method="post" novalidate>
+        {% csrf_token %}
+        
+        <!-- Renders Django fields directly inside uniform modern vertical stack components -->
+        {{ form.as_p }}
+        
+        <div class="ms-form-actions">
+            <button type="submit" class="ms-btn-primary">
+                Save
+            </button>
+            <a href="{% url 'post_list' %}" class="ms-btn-secondary">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
 {% endblock %}

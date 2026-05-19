@@ -3,14 +3,14 @@ from django.shortcuts import redirect, render
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth import login
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, DetailView, CreateView, TemplateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 
 from .models import Post, Comment
 from .forms import PostForm, CommentForm, UserRegistrationForm
 
 
-class PostListView(ListView):
+class PostListView(LoginRequiredMixin,ListView):
     """List all posts (newest first)"""
     model = Post
     template_name = 'posts/post_list.html'
@@ -18,7 +18,7 @@ class PostListView(ListView):
     ordering = ['-created_at']
 
 
-class PostDetailView(DetailView):
+class PostDetailView(LoginRequiredMixin,DetailView):
     """View a single post + handle comments"""
     model = Post
     template_name = 'posts/post_detail.html'
@@ -49,6 +49,9 @@ class PostDetailView(DetailView):
             messages.error(request, "Failed to add comment. Please check the form.")
             
         return redirect('post_detail', pk=post.pk)
+
+# posts/views.py
+
 
 
 class PostCreateView(LoginRequiredMixin, CreateView):
@@ -114,4 +117,9 @@ def register_view(request):
     else:
         form = UserRegistrationForm()
         
-    return render(request, 'registration/register.html', {'form': form})
+    return render(request, 'users/register.html', {'form': form})
+
+
+def DescriptionView(request):
+    """Simple description page for the app"""
+    return render(request, 'users/description.html')

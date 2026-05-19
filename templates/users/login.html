@@ -1,0 +1,214 @@
+<!-- templates/registration/login.html -->
+{% extends 'base.html' %}
+
+{% block title %}
+    Sign In - SharePoint Portal
+{% endblock %}
+
+{% block content %}
+<style>
+    /* --- SharePoint Identity & Account Panel Design --- */
+    .ms-auth-card {
+        max-width: 440px; /* Standard enterprise login/registration box width */
+        margin: 40px auto;
+        padding: 8px;
+        box-sizing: border-box;
+    }
+
+    .ms-auth-title {
+        color: var(--ms-text-primary);
+        margin-top: 0;
+        margin-bottom: 24px;
+        /* Applied .eth-text-heading style rules implicitly */
+        font-size: 18px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-auth-title {
+            font-size: 22px;
+            line-height: 1.6;
+        }
+    }
+
+    /* Target Django's generic paragraph-styled form components */
+    .ms-auth-card form p {
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    /* Clean SharePoint Form Labels */
+    .ms-auth-card form label {
+        color: var(--ms-text-primary);
+        /* Applied .eth-text-body-md style rules implicitly */
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+    @media (min-width: 768px) {
+        .ms-auth-card form label {
+            font-size: 14px;
+            line-height: 1.7;
+        }
+    }
+
+    /* Global Input Overrides to match Fluent UI v9 fields */
+    .ms-auth-card form input[type="text"],
+    .ms-auth-card form input[type="password"],
+    .ms-auth-card form input[type="email"],
+    .ms-auth-card form select,
+    .ms-auth-card form textarea {
+        font-family: var(--ms-font-family);
+        padding: 6px 10px;
+        height: 32px;
+        border: 1px solid var(--ms-border-ring); /* Gray 700 */
+        border-radius: var(--ms-radius-fluent);
+        background-color: var(--ms-bg-surface);
+        color: var(--ms-text-primary);
+        box-sizing: border-box;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        width: 100%;
+        /* Applied .eth-text-subtitle-md style rules implicitly */
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-auth-card form input[type="text"],
+        .ms-auth-card form input[type="password"],
+        .ms-auth-card form input[type="email"],
+        .ms-auth-card form select,
+        .ms-auth-card form textarea {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+    }
+
+    .ms-auth-card form input:focus,
+    .ms-auth-card form select:focus,
+    .ms-auth-card form textarea:focus {
+        outline: none;
+        border-color: var(--ms-color-secondary); /* DeepBlue 500 / DEFAULT Accent Focus */
+        box-shadow: 0 0 0 1px var(--ms-color-secondary);
+    }
+
+    /* Muted Helper/Validation strings below fields */
+    .ms-auth-card .helptext {
+        color: var(--ms-text-secondary);
+        margin-top: 4px;
+        /* Applied .eth-text-body-sm style rules implicitly */
+        font-size: 11px;
+        font-weight: 400;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-auth-card .helptext {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+    }
+
+    /* Form Errors Stack */
+    .ms-auth-card .errorlist {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 8px 0;
+        color: var(--ms-error-text); /* Red 700 */
+        /* Applied .eth-text-body-sm style rules implicitly */
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-auth-card .errorlist {
+            font-size: 12px;
+            line-height: 1.6;
+        }
+    }
+
+    /* Enterprise Standard Primary Call-to-Action Button */
+    .ms-btn-primary {
+        font-family: var(--ms-font-family);
+        background-color: var(--ms-color-brand); /* Lime 500 */
+        color: #FCFCFC; /* Gray 50 */
+        padding: 0 20px;
+        height: 32px;
+        border: 1px solid transparent;
+        border-radius: var(--ms-radius-fluent);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.1s ease, box-shadow 0.1s ease;
+        margin-top: 8px;
+        /* Applied .eth-text-subtitle-md style rules implicitly */
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+    @media (min-width: 768px) {
+        .ms-btn-primary {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+    }
+
+    .ms-btn-primary:hover {
+        background-color: var(--ms-color-brand-hover); /* Lime 600 */
+    }
+
+    .ms-btn-primary:active {
+        background-color: var(--ms-color-brand-active); /* Lime 700 */
+    }
+
+    /* Footer Metadata Link Stack */
+    .ms-auth-footer {
+        margin-top: 24px;
+        padding-top: 16px;
+        border-top: 1px solid var(--ms-border-subtle);
+        color: var(--ms-text-secondary);
+        /* Applied .eth-text-body-md style rules implicitly */
+        font-size: 13px;
+        font-weight: 400;
+        line-height: 1.5;
+    }
+    @media (min-width: 768px) {
+        .ms-auth-footer {
+            font-size: 14px;
+            line-height: 1.7;
+        }
+    }
+
+    .ms-auth-footer a {
+        color: var(--ms-color-secondary); /* DeepBlue 500 */
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .ms-auth-footer a:hover {
+        text-decoration: underline;
+        color: var(--ms-color-secondary-hover); /* DeepBlue 600 */
+    }
+</style>
+
+<div class="ms-auth-card">
+    <h2 class="ms-auth-title">Sign In</h2>
+    
+    <form method="post" novalidate>
+        {% csrf_token %}
+        
+        <!-- Renders Django fields directly wrapped inside our uniform Fluent target classes -->
+        {{ form.as_p }}
+        
+        <button type="submit" class="ms-btn-primary">
+            Login
+        </button>
+    </form>
+    
+    <div class="ms-auth-footer">
+        Don't have an account yet? <a href="{% url 'register' %}">Register here</a>
+    </div>
+</div>
+{% endblock %}
